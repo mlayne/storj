@@ -1,7 +1,6 @@
 package storj
 
 import (
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -24,17 +23,7 @@ type Bucket struct {
 }
 
 func (s *BucketService) List() ([]Bucket, error) {
-	if s.client.AuthKey == nil {
-		return nil, fmt.Errorf("authentication required")
-	}
-
 	nonce, err := s.client.generateNonce()
-	if err != nil {
-		return nil, err
-	}
-
-	msg := []byte(fmt.Sprintf("GET\n/buckets\n__nonce=%s", nonce))
-	sig, err := s.client.Sign(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -46,8 +35,11 @@ func (s *BucketService) List() ([]Bucket, error) {
 		return nil, err
 	}
 
-	req.Header.Add("x-signature", sig)
-	req.Header.Add("x-pubkey", hex.EncodeToString(s.client.AuthKey.PubKey().SerializeCompressed()))
+	msg := fmt.Sprintf("GET\n/buckets\n__nonce=%s", nonce)
+	err = s.client.signRequest(req, msg)
+	if err != nil {
+		return nil, err
+	}
 
 	var buckets []Bucket
 	_, err = s.client.Do(req, &buckets)

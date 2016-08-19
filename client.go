@@ -91,3 +91,16 @@ func (c *Client) Sign(msg []byte) (string, error) {
 
 	return hex.EncodeToString(sig.Serialize()), nil
 }
+
+func (c *Client) signRequest(r *http.Request, msg string) error {
+	sig, err := c.Sign([]byte(msg))
+	if err != nil {
+		return err
+	}
+
+	key := hex.EncodeToString(c.AuthKey.PubKey().SerializeCompressed())
+
+	r.Header.Add("x-pubkey", key)
+	r.Header.Add("x-signature", sig)
+	return nil
+}
