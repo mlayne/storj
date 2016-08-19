@@ -19,16 +19,19 @@ type Client struct {
 	BaseURL *url.URL
 	AuthKey *btcec.PrivateKey
 
-	Contacts ContactService
 	Keys     KeyService
+	Buckets  BucketService
+	Contacts ContactService
 }
 
 func NewClient() *Client {
 	baseURL, _ := url.Parse("https://api.storj.io")
 
 	c := &Client{client: http.DefaultClient, BaseURL: baseURL}
-	c.Contacts = ContactService{client: c}
+
 	c.Keys = KeyService{client: c}
+	c.Buckets = BucketService{client: c}
+	c.Contacts = ContactService{client: c}
 
 	return c
 }
