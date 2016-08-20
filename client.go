@@ -108,3 +108,42 @@ func (c *Client) signRequest(r *http.Request, msg string) error {
 	r.Header.Add("x-signature", sig)
 	return nil
 }
+
+func (c *Client) newRequest(method, path string) (*http.Request, error) {
+	rel, err := url.Parse(path)
+	if err != nil {
+		return nil, err
+	}
+
+	url := c.BaseURL.ResolveReference(rel)
+	req, err := http.NewRequest(method, url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func (c *Client) newSignedRequest(method, path string) (*http.Request, error) {
+	if method != "GET" && method != "DELETE" && method != "OPTIONS" {
+		return nil, fmt.Errorf("bad method")
+	}
+
+	nonce, err := c.generateNonce()
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := c.newRequest(method, fmt.Sprintf("%s?__nonce=%s", path, nonce))
+	if err != nil {
+		return nil, err
+	}
+
+	msg := fmt.Sprintf("%s\n%s\n__nonce=%s", method, path, nonce)
+	err = c.signRequest(req, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}

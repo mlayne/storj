@@ -25,20 +25,7 @@ type Bucket struct {
 }
 
 func (s *BucketService) List() ([]Bucket, error) {
-	nonce, err := s.client.generateNonce()
-	if err != nil {
-		return nil, err
-	}
-
-	rel, _ := url.Parse(fmt.Sprintf("/buckets?__nonce=%s", nonce))
-	url := s.client.BaseURL.ResolveReference(rel)
-	req, err := http.NewRequest("GET", url.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	msg := fmt.Sprintf("GET\n/buckets\n__nonce=%s", nonce)
-	err = s.client.signRequest(req, msg)
+	req, err := s.client.newSignedRequest("GET", "/buckets")
 	if err != nil {
 		return nil, err
 	}
@@ -99,20 +86,7 @@ func (s *BucketService) New(name string, storage, transfer int) (*Bucket, error)
 }
 
 func (s *BucketService) Delete(bucketID string) error {
-	nonce, err := s.client.generateNonce()
-	if err != nil {
-		return err
-	}
-
-	rel, _ := url.Parse(fmt.Sprintf("/buckets/%s?__nonce=%s", bucketID, nonce))
-	url := s.client.BaseURL.ResolveReference(rel)
-	req, err := http.NewRequest("DELETE", url.String(), nil)
-	if err != nil {
-		return err
-	}
-
-	msg := fmt.Sprintf("DELETE\n/buckets/%s\n__nonce=%s", bucketID, nonce)
-	err = s.client.signRequest(req, msg)
+	req, err := s.client.newSignedRequest("DELETE", fmt.Sprintf("/buckets/%s", bucketID))
 	if err != nil {
 		return err
 	}
