@@ -1,6 +1,8 @@
 package storj
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -41,4 +43,48 @@ func (s *KeyService) List() ([]Key, error) {
 	}
 
 	return keys, nil
+}
+
+func (s *KeyService) Register(key string) error {
+	nonce, err := s.client.generateNonce()
+	if err != nil {
+		return err
+	}
+
+	k := struct {
+		Key   string `json:"key"`
+		Nonce string `json:"__nonce"`
+	}{
+		key,
+		nonce,
+	}
+
+	j, err := json.Marshal(&k)
+	if err != nil {
+		return err
+	}
+
+	rel, _ := url.Parse("/keys")
+	url := s.client.BaseURL.ResolveReference(rel)
+	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(j))
+	if err != nil {
+		return err
+	}
+
+	msg := fmt.Sprintf("POST\n/keys\n%s", j)
+	err = s.client.signRequest(req, msg)
+	if err != nil {
+		return err
+	}
+
+	var respKey Key
+	_, err = s.client.Do(req, &respKey)
+	if err != nil {
+		return err
+	}
+	if respKey.Key != key {
+		return fmt.Errorf("received non-matching key from server")
+	}
+
+	return nil
 }

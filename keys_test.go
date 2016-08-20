@@ -2,6 +2,7 @@ package storj
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"reflect"
@@ -41,5 +42,41 @@ func TestKeysList(t *testing.T) {
 		User: "gordon@storj.io"}}
 	if !reflect.DeepEqual(keys, expected) {
 		t.Errorf("Keys.List returned %+v, expected %+v", keys, expected)
+	}
+}
+
+func TestKeysRegister(t *testing.T) {
+	setup()
+	defer teardown()
+
+	err := client.Keys.Register("xyz")
+	if err == nil || err.Error() != "authentication required" {
+		t.Errorf("Keys.Register should require authentication")
+	}
+
+	enableAuth()
+	defer disableAuth()
+
+	pubKey := hex.EncodeToString(privKey.PubKey().SerializeCompressed())
+
+	mux.HandleFunc("/keys", func(w http.ResponseWriter, r *http.Request) {
+		assertMethod(t, r, "POST")
+		assertHeader(t, r, "x-pubkey", pubKey)
+		if r.Header.Get("x-signature") == "" {
+			t.Errorf(`missing "x-signature" header`)
+		}
+		var sent map[string]string
+		if err := json.NewDecoder(r.Body).Decode(&sent); err != nil {
+			t.Errorf("received bad JSON")
+		}
+		if sent["key"] != "xyz" {
+			t.Errorf("expected key %q, got %q", "xyz", sent["key"])
+		}
+		fmt.Fprintf(w, `{"key": "xyz", "user": "gordon@storj.io"}`)
+	})
+
+	err = client.Keys.Register("xyz")
+	if err != nil {
+		t.Errorf("Keys.Register returned error: %v", err)
 	}
 }
