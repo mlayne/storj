@@ -85,7 +85,7 @@ func TestKeysDelete(t *testing.T) {
 	setup()
 	defer teardown()
 
-	err := client.Buckets.Delete("xyz")
+	err := client.Keys.Delete("xyz")
 	if err == nil || err.Error() != "authentication required" {
 		t.Errorf("Keys.Delete should require authentication")
 	}
@@ -95,7 +95,7 @@ func TestKeysDelete(t *testing.T) {
 
 	pubKey := hex.EncodeToString(privKey.PubKey().SerializeCompressed())
 
-	mux.HandleFunc("/buckets/xyz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/keys/xyz", func(w http.ResponseWriter, r *http.Request) {
 		assertMethod(t, r, "DELETE")
 		assertHeader(t, r, "x-pubkey", pubKey)
 		if r.Header.Get("x-signature") == "" {
@@ -104,8 +104,8 @@ func TestKeysDelete(t *testing.T) {
 		w.WriteHeader(204)
 	})
 
-	err = client.Buckets.Delete("xyz")
+	err = client.Keys.Delete("xyz")
 	if err != nil {
-		t.Errorf("Delete.Delete returned error: %v", err)
+		t.Errorf("Keys.Delete returned error: %v", err)
 	}
 }

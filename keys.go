@@ -77,7 +77,7 @@ func (s *KeyService) Register(key string) error {
 }
 
 func (s *KeyService) Delete(key string) error {
-	req, err := s.client.newSignedRequest("DELETE", fmt.Sprintf("/keys/%s"))
+	req, err := s.client.newSignedRequest("DELETE", fmt.Sprintf("/keys/%s", key))
 	if err != nil {
 		return err
 	}
