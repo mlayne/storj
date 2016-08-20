@@ -120,7 +120,7 @@ func TestBucketsDelete(t *testing.T) {
 
 	err := client.Buckets.Delete("xyz")
 	if err == nil || err.Error() != "authentication required" {
-		t.Errorf("Buckets.List should require authentication")
+		t.Errorf("Buckets.Delete should require authentication")
 	}
 
 	enableAuth()
