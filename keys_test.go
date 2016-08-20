@@ -80,3 +80,32 @@ func TestKeysRegister(t *testing.T) {
 		t.Errorf("Keys.Register returned error: %v", err)
 	}
 }
+
+func TestKeysDelete(t *testing.T) {
+	setup()
+	defer teardown()
+
+	err := client.Buckets.Delete("xyz")
+	if err == nil || err.Error() != "authentication required" {
+		t.Errorf("Keys.Delete should require authentication")
+	}
+
+	enableAuth()
+	defer disableAuth()
+
+	pubKey := hex.EncodeToString(privKey.PubKey().SerializeCompressed())
+
+	mux.HandleFunc("/buckets/xyz", func(w http.ResponseWriter, r *http.Request) {
+		assertMethod(t, r, "DELETE")
+		assertHeader(t, r, "x-pubkey", pubKey)
+		if r.Header.Get("x-signature") == "" {
+			t.Errorf(`missing "x-signature" header`)
+		}
+		w.WriteHeader(204)
+	})
+
+	err = client.Buckets.Delete("xyz")
+	if err != nil {
+		t.Errorf("Delete.Delete returned error: %v", err)
+	}
+}

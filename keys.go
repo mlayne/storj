@@ -75,3 +75,20 @@ func (s *KeyService) Register(key string) error {
 
 	return nil
 }
+
+func (s *KeyService) Delete(key string) error {
+	req, err := s.client.newSignedRequest("DELETE", fmt.Sprintf("/keys/%s"))
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.client.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 204 {
+		return fmt.Errorf("expected status 204, got %d", resp.StatusCode)
+	}
+
+	return nil
+}
