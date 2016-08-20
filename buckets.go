@@ -97,3 +97,33 @@ func (s *BucketService) New(name string, storage, transfer int) (*Bucket, error)
 
 	return &bucket, nil
 }
+
+func (s *BucketService) Delete(bucketID string) error {
+	nonce, err := s.client.generateNonce()
+	if err != nil {
+		return err
+	}
+
+	rel, _ := url.Parse(fmt.Sprintf("/buckets/%s?__nonce=%s", bucketID, nonce))
+	url := s.client.BaseURL.ResolveReference(rel)
+	req, err := http.NewRequest("DELETE", url.String(), nil)
+	if err != nil {
+		return err
+	}
+
+	msg := fmt.Sprintf("DELETE\n/buckets/%s\n__nonce=%s", bucketID, nonce)
+	err = s.client.signRequest(req, msg)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.client.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 204 {
+		return fmt.Errorf("expected status 204, got %d", resp.StatusCode)
+	}
+
+	return nil
+}

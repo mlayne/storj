@@ -113,3 +113,32 @@ func TestBucketsNew(t *testing.T) {
 		t.Errorf("Buckets.New returned %+v, expected %+v", bucket, exBucket)
 	}
 }
+
+func TestBucketsDelete(t *testing.T) {
+	setup()
+	defer teardown()
+
+	err := client.Buckets.Delete("xyz")
+	if err == nil || err.Error() != "authentication required" {
+		t.Errorf("Buckets.List should require authentication")
+	}
+
+	enableAuth()
+	defer disableAuth()
+
+	pubKey := hex.EncodeToString(privKey.PubKey().SerializeCompressed())
+
+	mux.HandleFunc("/buckets/xyz", func(w http.ResponseWriter, r *http.Request) {
+		assertMethod(t, r, "DELETE")
+		assertHeader(t, r, "x-pubkey", pubKey)
+		if r.Header.Get("x-signature") == "" {
+			t.Errorf(`missing "x-signature" header`)
+		}
+		w.WriteHeader(204)
+	})
+
+	err = client.Buckets.Delete("xyz")
+	if err != nil {
+		t.Errorf("Buckets.Delete returned error: %v", err)
+	}
+}

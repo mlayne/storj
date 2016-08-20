@@ -66,7 +66,6 @@ func (c *Client) Do(req *http.Request, into interface{}) (*http.Response, error)
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(into); err != nil {
-		fmt.Printf("%v\n", resp)
 		return nil, err
 	}
 
