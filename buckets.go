@@ -1,6 +1,8 @@
 package storj
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -48,4 +50,50 @@ func (s *BucketService) List() ([]Bucket, error) {
 	}
 
 	return buckets, nil
+}
+
+func (s *BucketService) New(name string, storage, transfer int) (*Bucket, error) {
+	nonce, err := s.client.generateNonce()
+	if err != nil {
+		return nil, err
+	}
+
+	b := struct {
+		Name     string `json:"name"`
+		Storage  int    `json:"storage"`
+		Transfer int    `json:"transfer"`
+		Nonce    string `json:"__nonce"`
+	}{
+		name,
+		storage,
+		transfer,
+		nonce,
+	}
+
+	j, err := json.Marshal(&b)
+	if err != nil {
+		return nil, err
+	}
+
+	rel, _ := url.Parse("/buckets")
+	url := s.client.BaseURL.ResolveReference(rel)
+	req, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(j))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	msg := fmt.Sprintf("POST\n/buckets\n%s", j)
+	err = s.client.signRequest(req, msg)
+	if err != nil {
+		return nil, err
+	}
+
+	var bucket Bucket
+	_, err = s.client.Do(req, &bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	return &bucket, nil
 }

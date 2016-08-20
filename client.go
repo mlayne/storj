@@ -60,6 +60,11 @@ func (c *Client) Do(req *http.Request, into interface{}) (*http.Response, error)
 	}
 	defer resp.Body.Close()
 
+	status := resp.StatusCode
+	if status < 200 || status > 299 {
+		return nil, fmt.Errorf("got status code %d", status)
+	}
+
 	if err := json.NewDecoder(resp.Body).Decode(into); err != nil {
 		fmt.Printf("%v\n", resp)
 		return nil, err
