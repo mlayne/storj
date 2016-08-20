@@ -85,6 +85,21 @@ func (s *BucketService) New(name string, storage, transfer int) (*Bucket, error)
 	return &bucket, nil
 }
 
+func (s *BucketService) Get(bucketID string) (*Bucket, error) {
+	req, err := s.client.newSignedRequest("GET", fmt.Sprintf("/buckets/%s", bucketID))
+	if err != nil {
+		return nil, err
+	}
+
+	var bucket Bucket
+	_, err = s.client.Do(req, &bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	return &bucket, nil
+}
+
 func (s *BucketService) Delete(bucketID string) error {
 	req, err := s.client.newSignedRequest("DELETE", fmt.Sprintf("/buckets/%s", bucketID))
 	if err != nil {

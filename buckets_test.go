@@ -114,6 +114,39 @@ func TestBucketsNew(t *testing.T) {
 	}
 }
 
+func TestBucketsGet(t *testing.T) {
+	setup()
+	defer teardown()
+
+	_, err := client.Buckets.Get("xyz")
+	if err == nil || err.Error() != "authentication required" {
+		t.Errorf("Buckets.Get should require authentication")
+	}
+
+	enableAuth()
+	defer disableAuth()
+
+	pubKey := hex.EncodeToString(privKey.PubKey().SerializeCompressed())
+
+	mux.HandleFunc("/buckets/xyz", func(w http.ResponseWriter, r *http.Request) {
+		assertMethod(t, r, "GET")
+		assertHeader(t, r, "x-pubkey", pubKey)
+		if r.Header.Get("x-signature") == "" {
+			t.Errorf(`missing "x-signature" header`)
+		}
+		fmt.Fprintf(w, bucketJson)
+	})
+
+	bucket, err := client.Buckets.Get("xyz")
+	if err != nil {
+		t.Errorf("Buckets.Get returned error: %v", err)
+	}
+
+	if !reflect.DeepEqual(bucket, &exBucket) {
+		t.Errorf("Buckets.Get returned %+v, expected %+v", bucket, exBucket)
+	}
+}
+
 func TestBucketsDelete(t *testing.T) {
 	setup()
 	defer teardown()
