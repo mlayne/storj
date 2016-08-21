@@ -21,6 +21,7 @@ type Client struct {
 
 	Keys     KeyService
 	Files    FileService
+	Tokens   TokenService
 	Buckets  BucketService
 	Contacts ContactService
 }
@@ -32,6 +33,7 @@ func NewClient() *Client {
 
 	c.Keys = KeyService{client: c}
 	c.Files = FileService{client: c}
+	c.Tokens = TokenService{client: c}
 	c.Buckets = BucketService{client: c}
 	c.Contacts = ContactService{client: c}
 
