@@ -61,3 +61,32 @@ func TestFilesList(t *testing.T) {
 		t.Errorf("Files.List returned %+v, expected %+v", files, expected)
 	}
 }
+
+func TestFilesDelete(t *testing.T) {
+	setup()
+	defer teardown()
+
+	err := client.Files.Delete("abc", "xyz")
+	if err == nil || err.Error() != "authentication required" {
+		t.Errorf("Files.Delete should require authentication")
+	}
+
+	enableAuth()
+	defer disableAuth()
+
+	pubFile := hex.EncodeToString(privKey.PubKey().SerializeCompressed())
+
+	mux.HandleFunc("/buckets/abc/files/xyz", func(w http.ResponseWriter, r *http.Request) {
+		assertMethod(t, r, "DELETE")
+		assertHeader(t, r, "x-pubkey", pubFile)
+		if r.Header.Get("x-signature") == "" {
+			t.Errorf(`missing "x-signature" header`)
+		}
+		w.WriteHeader(204)
+	})
+
+	err = client.Files.Delete("abc", "xyz")
+	if err != nil {
+		t.Errorf("Files.Delete returned error: %v", err)
+	}
+}

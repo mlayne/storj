@@ -29,3 +29,21 @@ func (s *FileService) List(bucketID string) ([]File, error) {
 
 	return files, nil
 }
+
+func (s *FileService) Delete(bucketID, fileID string) error {
+	path := fmt.Sprintf("/buckets/%s/files/%s", bucketID, fileID)
+	req, err := s.client.newSignedRequest("DELETE", path)
+	if err != nil {
+		return err
+	}
+
+	resp, err := s.client.client.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != 204 {
+		return fmt.Errorf("expected status 204, got %d", resp.StatusCode)
+	}
+
+	return nil
+}
