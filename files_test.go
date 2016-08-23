@@ -90,3 +90,45 @@ func TestFilesDelete(t *testing.T) {
 		t.Errorf("Files.Delete returned error: %v", err)
 	}
 }
+
+func TestFilesListPointers(t *testing.T) {
+	setup()
+	defer teardown()
+
+	mux.HandleFunc("/buckets/abc/files/xyz", func(w http.ResponseWriter, r *http.Request) {
+		assertMethod(t, r, "GET")
+		assertHeader(t, r, "x-token", "a_token")
+		fmt.Fprintf(w, `[
+  {
+    "hash": "ba084d3f143f2896809d3f1d7dffed472b39d8de",
+    "token": "99cf1af00b552113a856f8ef44f58d22269389e8009d292bafd10af7cc30dcfa",
+    "operation": "PULL",
+    "farmer": {
+      "address": "api.storj.io",
+      "port": 8443,
+      "nodeID": "32033d2dc11b877df4b1caefbffba06495ae6b18",
+      "lastSeen": 1471922911187,
+      "protocol": "0.7.0"
+    }
+  }]`)
+	})
+
+	fps, err := client.Files.ListPointers("abc", "xyz", "a_token")
+	if err != nil {
+		t.Errorf("Files.ListPointers returned error: %v", err)
+	}
+
+	expected := []FilePointer{{
+		Hash:      "ba084d3f143f2896809d3f1d7dffed472b39d8de",
+		Token:     "99cf1af00b552113a856f8ef44f58d22269389e8009d292bafd10af7cc30dcfa",
+		Operation: "PULL",
+		Farmer: Farmer{
+			Address:  "api.storj.io",
+			Port:     8443,
+			NodeID:   "32033d2dc11b877df4b1caefbffba06495ae6b18",
+			LastSeen: 1471922911187,
+			Protocol: "0.7.0"}}}
+	if !reflect.DeepEqual(fps, expected) {
+		t.Errorf("Files.ListPointers returned %+v, expected %+v", fps, expected)
+	}
+}

@@ -1,6 +1,9 @@
 package storj
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
 type FileService struct {
 	client *Client
@@ -46,4 +49,41 @@ func (s *FileService) Delete(bucketID, fileID string) error {
 	}
 
 	return nil
+}
+
+// TODO Reuse Contact here. json.Unmarshal doesn't handle the node-style timestamp that
+// /buckets/_/files/_ returns.
+
+type Farmer struct {
+	Address  string `json:"address"`
+	LastSeen int64  `json:"lastSeen"`
+	NodeID   string `json:"nodeID"`
+	Port     int    `json:"port"`
+	Protocol string `json:"protocol"`
+}
+
+type FilePointer struct {
+	Hash      string `json:"hash"`
+	Token     string `json:"token"`
+	Operation string `json:"operation"`
+	Farmer    Farmer `json:"farmer"`
+}
+
+func (s *FileService) ListPointers(bucketID, fileID, token string) ([]FilePointer, error) {
+	rel, _ := url.Parse(fmt.Sprintf("/buckets/%s/files/%s", bucketID, fileID))
+	url := s.client.BaseURL.ResolveReference(rel)
+	req, err := s.client.newRequest("GET", url.String())
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("x-token", token)
+
+	var fps []FilePointer
+	_, err = s.client.Do(req, &fps)
+	if err != nil {
+		return nil, err
+	}
+
+	return fps, nil
 }
